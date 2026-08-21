@@ -5,8 +5,21 @@ Small demos for the SDK living in this repo (not published to npm).
 ```bash
 cd example
 npm install
-cp .env.sample .env   # set MXPF_HARNESS_API_KEY for live runs
+cp .env.sample .env   # or use the prepared .env — fill API keys
 ```
+
+**Env keys**
+
+| Variable | Required for | Purpose |
+|----------|--------------|---------|
+| `MXPF_HARNESS_API_KEY` | `basic` / `langgraph` | Model provider auth |
+| `MXPF_HARNESS_PROVIDER` | optional | `anthropic` (default) or `openai` |
+| `MXPF_HARNESS_MODEL` | optional | Model id |
+| `MXPF_HARNESS_BASE_URL` | optional | OpenRouter / LiteLLM / local pipe |
+| `LANGSMITH_API_KEY` | optional | [LangSmith](https://smith.langchain.com/o/b7827736-fb11-449f-aca5-8aa59d6a7035) traces |
+| `LANGSMITH_PROJECT` | optional | Default `mxpf-ai-harness-examples` |
+
+LangSmith stays off until you paste an API key; then live LangGraph runs log `[langsmith] tracing on`.
 
 ## Examples
 

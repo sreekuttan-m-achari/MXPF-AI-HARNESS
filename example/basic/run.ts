@@ -9,6 +9,10 @@ import { fileURLToPath } from "node:url";
 
 import { Harness } from "mxpf-ai-harness";
 
+import { enableLangSmithIfConfigured } from "../langsmith.js";
+
+enableLangSmithIfConfigured();
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const apiKey = process.env.MXPF_HARNESS_API_KEY?.trim();

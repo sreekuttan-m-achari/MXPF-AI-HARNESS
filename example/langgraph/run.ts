@@ -11,6 +11,10 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 
 import { Harness, type HarnessEvent, type RunResult } from "mxpf-ai-harness";
 
+import { enableLangSmithIfConfigured } from "../langsmith.js";
+
+enableLangSmithIfConfigured();
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const apiKey = process.env.MXPF_HARNESS_API_KEY?.trim();
