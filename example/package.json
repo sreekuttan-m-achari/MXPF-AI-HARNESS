@@ -1,0 +1,24 @@
+{
+  "name": "mxpf-ai-harness-examples",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "basic": "tsx basic/run.ts",
+    "basic:mock": "tsx basic/run-mock.ts",
+    "langgraph": "tsx langgraph/run.ts",
+    "langgraph:mock": "tsx langgraph/run-mock.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.70",
+    "@langchain/langgraph": "^0.3.0",
+    "dotenv": "^16.4.5",
+    "mxpf-ai-harness": "file:.."
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.0"
+  }
+}

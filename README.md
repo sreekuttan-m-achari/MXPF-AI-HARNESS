@@ -125,6 +125,20 @@ MXPF_HARNESS_PERMISSION_MODE=bypass
 
 Keep `AARIA_RUNTIME=cursor` (default) and `claude` as switchable alternatives. Adapter lives in the AARIA repo (`src/runtime/mxpf.ts`) — not inside this package.
 
+## Examples
+
+Small projects under [`example/`](./example):
+
+```bash
+cd example && npm install
+npm run basic:mock       # offline harness demo
+npm run langgraph:mock   # LangGraph orchestrates + monitors a harness run
+```
+
+Live runs: copy `example/.env.sample` → `.env`, set `MXPF_HARNESS_API_KEY`, then `npm run basic` / `npm run langgraph`.
+
+**LangChain / LangGraph:** yes — use LangGraph *around* the harness for multi-step flows and monitoring; keep tool/MCP loops inside `mxpf-ai-harness`. See [`example/langgraph/README.md`](./example/langgraph/README.md).
+
 ## Scripts
 
 ```bash

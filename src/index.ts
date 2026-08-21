@@ -3,6 +3,14 @@ export type { HarnessEvent } from "./events.js";
 export { PermissionGate } from "./permissions/gate.js";
 export { SessionStore } from "./session/store.js";
 export { createModelClient } from "./model/index.js";
+export type {
+  ModelClient,
+  ModelCompleteRequest,
+  ModelCompleteResponse,
+  InternalMessage,
+  ContentBlock,
+  ToolDefinition,
+} from "./model/types.js";
 export { McpHost } from "./mcp/host.js";
 export { ToolRouter } from "./tools/router.js";
 export { DEFAULT_BUILTIN_NAMES } from "./tools/builtins.js";

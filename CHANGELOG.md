@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `example/` demos: basic harness + LangGraph orchestrate/monitor pattern.
+- Public export of `ModelClient` / `ModelCompleteResponse` types for tests and examples.
+
 ## [0.1.0] — 2026-08-21
 
 ### Added
