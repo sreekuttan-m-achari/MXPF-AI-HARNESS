@@ -3,99 +3,100 @@
 Public package under npm account **`sreekuttan.m.achari`**.  
 Repo: https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS
 
-You can publish **manually** or via **GitHub Actions** when you create a GitHub Release.
+**Recommended:** Trusted Publishing (OIDC) — no long-lived CI token.  
+npm itself warns against “Bypass 2FA” granular tokens for CI; prefer this path.
+
+Docs: [Trusted publishers](https://docs.npmjs.com/trusted-publishers/)
 
 ---
 
-## Option A — GitHub Actions (recommended)
+## Right path (do this)
 
-### 1. Create an npm Automation token
+### Step 1 — Cancel the npm “Granular Access Token” form
 
-1. Sign in at https://www.npmjs.com/ as `sreekuttan.m.achari`
-2. **Access Tokens** → **Generate New Token** → type **Automation** (CI-friendly; bypasses 2FA on publish)
-3. Copy the token once
+You do **not** need `GIT_CI_PUBLISH_TOKEN` for the recommended setup. Close that page.
 
-### 2. Add the GitHub secret
+GitHub showing **no repository secrets** is expected for Trusted Publishing.
 
-1. Open https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/settings/secrets/actions
-2. **New repository secret**
-   - Name: `NPM_TOKEN` (exact name — the workflow reads `secrets.NPM_TOKEN`)
-   - Value: the Automation token
+### Step 2 — First publish once from your laptop (bootstrap)
 
-**If publish failed with `ENEEDAUTH`:** the secret was missing. Add `NPM_TOKEN`, then re-run the failed job:
-
-```bash
-gh run rerun 32459595047 --failed
-# or: Actions → failed run → Re-run failed jobs
-```
-
-Do **not** create a new `0.1.0` tag if the version never landed on npm; re-running the same release workflow is enough once the secret exists.
-
-Verify secret name in the UI matches `NPM_TOKEN` (not `NPM_TOKEN ` / `NODE_AUTH_TOKEN`).
-
-### 3. Ship a version
-
-```bash
-# 1. Bump version in package.json + CHANGELOG (keep them in sync)
-# 2. Commit & push main
-git push origin main
-
-# 3. Tag matching package.json (e.g. 0.1.0 → v0.1.0)
-git tag v0.1.0
-git push origin v0.1.0
-
-# 4. Create a GitHub Release from that tag (UI or gh)
-gh release create v0.1.0 \
-  --title "mxpf-ai-harness 0.1.0" \
-  --notes-file docs/releases/2026-08-21-v0.1.0.md
-```
-
-Publishing the release triggers [`.github/workflows/publish.yml`](../.github/workflows/publish.yml): test → build → `npm publish --access public --provenance`.
-
-### 4. Verify
-
-```bash
-npm view mxpf-ai-harness version
-npm install mxpf-ai-harness
-```
-
-Package page: https://www.npmjs.com/package/mxpf-ai-harness
-
----
-
-## Option B — Manual publish (one-off / first time)
+OIDC cannot create a brand-new package; npm needs one version on the registry before you can attach a Trusted Publisher.
 
 ```bash
 cd ~/AI/MXPF-AI-HARNESS
+git pull
+npm ci
 npm test && npm run build
-npm login   # sreekuttan.m.achari
+npm login    # sreekuttan.m.achari (browser / OTP as prompted)
 npm publish --access public
-git tag v0.1.0 && git push origin v0.1.0
+npm view mxpf-ai-harness version   # expect 0.1.0
 ```
 
-Use this if CI secret is not set yet. After the first successful publish, prefer Option A.
+If `0.1.0` already exists on npm, skip this step.
+
+### Step 3 — Connect Trusted Publisher on npm
+
+1. Open https://www.npmjs.com/package/mxpf-ai-harness  
+2. **Package settings** → **Trusted Publisher** (or **Publishing access** / **Connections**)  
+3. **GitHub Actions** → fill exactly:
+
+| Field | Value |
+|-------|--------|
+| Organization or user | `sreekuttan-m-achari` |
+| Repository | `MXPF-AI-HARNESS` |
+| Workflow filename | `publish.yml` *(name only, not the path)* |
+| Environment | *(leave empty unless you use GitHub Environments)* |
+| Allowed actions | enable **`npm publish`** |
+
+4. Save.
+
+### Step 4 — Push CI that uses OIDC
+
+Ensure `main` has the latest `.github/workflows/publish.yml` (permissions include `id-token: write`, no required `NPM_TOKEN`).
+
+```bash
+git push origin main
+```
+
+### Step 5 — Later releases (no token)
+
+Bump `package.json` + CHANGELOG → tag → GitHub Release:
+
+```bash
+git tag v0.1.1 && git push origin v0.1.1
+gh release create v0.1.1 --title "mxpf-ai-harness 0.1.1" --notes "..."
+```
+
+The **Publish npm** workflow authenticates via OIDC. No GitHub secret needed.
 
 ---
 
-## Option C — npm Trusted Publishing (OIDC, no long-lived token)
+## If you still want a token today (not recommended)
 
-npm supports publishing from GitHub Actions via OIDC without `NPM_TOKEN`. Configure on the package settings at npmjs.com → **Trusted Publisher** → GitHub Actions (repo + workflow file). The publish workflow already requests `id-token: write`. You can switch from `NODE_AUTH_TOKEN` to trusted publishing once configured; until then keep `NPM_TOKEN`.
+Only if you cannot do Step 2 locally:
 
-Docs: https://docs.npmjs.com/trusted-publishers
-
----
-
-## Checklist before every release
-
-- [ ] `package.json` `"version"` bumped
-- [ ] `CHANGELOG.md` updated
-- [ ] `npm test` / `npm run build` green locally (or wait for CI on `main`)
-- [ ] Tag `vX.Y.Z` matches `"version"`
-- [ ] GitHub Release published (for CI publish)
-- [ ] `NPM_TOKEN` secret present (Option A)
+1. On npm, create a **Granular** token (or classic **Automation** token).
+2. Under **Packages and scopes**: grant **Read and write** on `mxpf-ai-harness` (or “all packages” if it does not exist yet).
+3. Leave **Allowed IP ranges** empty unless you lock to GitHub’s IPs (usually skip).
+4. **Bypass 2FA** may be required for CI tokens — npm warns for a reason; prefer Trusted Publishing after first publish.
+5. Copy token → GitHub → [New repository secret](https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/settings/secrets/actions) named exactly `NPM_TOKEN`.
+6. Re-run the failed workflow: `gh run rerun <run-id> --failed`
 
 ---
 
-## What CI does on every PR / push to `main`
+## What CI does
 
-[`.github/workflows/ci.yml`](../.github/workflows/ci.yml): `npm ci` → `npm test` → `npm run build` (does **not** publish).
+| Workflow | Trigger | Publishes? |
+|----------|---------|------------|
+| `ci.yml` | PR / push to `main` | No — test + build only |
+| `publish.yml` | GitHub Release published | Yes — via OIDC (or optional `NPM_TOKEN` fallback) |
+
+---
+
+## Checklist
+
+- [ ] First `npm publish` from laptop (0.1.0) **or** package already on npm
+- [ ] Trusted Publisher: `sreekuttan-m-achari` / `MXPF-AI-HARNESS` / `publish.yml`
+- [ ] Do **not** add a CI granular token unless you need the fallback
+- [ ] Tag `vX.Y.Z` matches `package.json` version
+- [ ] GitHub Release published → watch Actions → **Publish npm**
