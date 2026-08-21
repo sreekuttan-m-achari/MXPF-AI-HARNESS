@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-21
+
+### Added
+
+- **Context budgets:** `HarnessOptions.context` with tool-result / Read / Bash caps, optional `autoCompact` / `maxInputChars` extractive compaction (model view; session stays lossless unless `persistCompaction`).
+- **Throughput:** `HarnessOptions.throughput.parallelTools` (default on) runs tool_uses in one step concurrently; `promptCache` enables Anthropic `cache_control` on system + last tool.
+- **`ModelRef.maxOutputTokens`** — forwarded to Anthropic `max_tokens` and OpenAI `max_tokens`.
+- Compact session JSON persistence (no pretty-print).
+
+### Notes
+
+- Compaction is **off** until `context.autoCompact` or `context.maxInputChars` is set.
+- Design: `docs/superpowers/specs/2026-08-21-mxpf-harness-optimizations-design.md`.
+
 ## [0.1.1] — 2026-08-21
 
 ### Added

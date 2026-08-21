@@ -36,6 +36,10 @@ export type ModelCompleteRequest = {
   systemPrompt?: string;
   structuredOutput?: Record<string, unknown>;
   signal?: AbortSignal;
+  /** Hint providers to cache stable system/tools prefix when supported. */
+  promptCache?: boolean;
+  /** Override client default max output tokens for this call. */
+  maxOutputTokens?: number;
 };
 
 export type ModelCompleteResponse = {

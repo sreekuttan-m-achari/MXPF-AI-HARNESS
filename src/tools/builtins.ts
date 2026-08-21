@@ -10,6 +10,11 @@ import {
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
+import { truncateToolResult } from "../context/truncate.js";
+import {
+  DEFAULT_BASH_MAX_CHARS,
+  DEFAULT_READ_DEFAULT_MAX_CHARS,
+} from "../context/defaults.js";
 import type { ToolDefinition } from "../model/types.js";
 
 const execFileAsync = promisify(execFile);
@@ -169,11 +174,20 @@ function globMatch(relPath: string, pattern: string): boolean {
   return normalized === pattern || normalized.endsWith("/" + pattern);
 }
 
+export type BuiltinCaps = {
+  readDefaultMaxChars?: number;
+  bashMaxChars?: number;
+};
+
 export async function executeBuiltin(
   cwd: string,
   name: string,
   input: unknown,
+  caps?: BuiltinCaps,
 ): Promise<string> {
+  const readMax = caps?.readDefaultMaxChars ?? DEFAULT_READ_DEFAULT_MAX_CHARS;
+  const bashMax = caps?.bashMaxChars ?? DEFAULT_BASH_MAX_CHARS;
+
   switch (name) {
     case "Read": {
       const path = asString(input, "path");
@@ -184,7 +198,8 @@ export async function executeBuiltin(
       const lines = text.split("\n");
       const start = Math.max(0, offset - 1);
       const slice = limit == null ? lines.slice(start) : lines.slice(start, start + limit);
-      return slice.map((l, i) => `${start + i + 1}|${l}`).join("\n");
+      const numbered = slice.map((l, i) => `${start + i + 1}|${l}`).join("\n");
+      return truncateToolResult(numbered, readMax);
     }
     case "Write": {
       const path = asString(input, "path");
@@ -210,15 +225,17 @@ export async function executeBuiltin(
     case "Bash": {
       const command = asString(input, "command");
       const timeout = asOptionalNumber(input, "timeout_ms") ?? 60_000;
+      const maxBuffer = Math.min(2 * 1024 * 1024, Math.max(bashMax * 4, 64_000));
       try {
         const { stdout, stderr } = await execFileAsync("bash", ["-lc", command], {
           cwd,
           timeout,
-          maxBuffer: 2 * 1024 * 1024,
+          maxBuffer,
           env: process.env,
         });
         const out = [stdout, stderr].filter(Boolean).join("\n").trim();
-        return out.length > 0 ? out : "(no output)";
+        const text = out.length > 0 ? out : "(no output)";
+        return truncateToolResult(text, bashMax);
       } catch (e) {
         const err = e as {
           stdout?: string;
@@ -232,7 +249,7 @@ export async function executeBuiltin(
           err.message ?? String(e),
           err.code != null ? `exit ${err.code}` : undefined,
         ].filter(Boolean);
-        throw new Error(parts.join("\n"));
+        throw new Error(truncateToolResult(parts.join("\n"), bashMax));
       }
     }
     case "Glob": {

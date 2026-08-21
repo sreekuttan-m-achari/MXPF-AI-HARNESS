@@ -86,6 +86,71 @@ describe("Harness loop", () => {
     }
   });
 
+  it("runs parallel tool calls and preserves result order", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "mxpf-h-par-"));
+    const sess = mkdtempSync(join(tmpdir(), "mxpf-hs-par-"));
+    try {
+      writeFileSync(join(dir, "a.txt"), "AAA", "utf8");
+      writeFileSync(join(dir, "b.txt"), "BBB", "utf8");
+
+      const harness = await Harness.create({
+        cwd: dir,
+        sessionDir: sess,
+        model: { provider: "openai", id: "mock", apiKey: "x" },
+        tools: { mcp: false },
+        throughput: { parallelTools: true },
+        fetch: async () => {
+          throw new Error("network should not be used");
+        },
+      });
+
+      const anyH = harness as unknown as { model: ModelClient };
+      anyH.model = mockModel([
+        {
+          content: [
+            {
+              type: "tool_use",
+              id: "t1",
+              name: "Read",
+              input: { path: "a.txt" },
+            },
+            {
+              type: "tool_use",
+              id: "t2",
+              name: "Read",
+              input: { path: "b.txt" },
+            },
+          ],
+          stopReason: "tool_use",
+        },
+        {
+          content: [{ type: "text", text: "done" }],
+          stopReason: "end_turn",
+          rawText: "done",
+        },
+      ]);
+
+      const run = await harness.send("read both");
+      const results: Array<{ id: string; output: string }> = [];
+      for await (const ev of run.stream()) {
+        if (ev.type === "tool.result") {
+          results.push({ id: ev.toolCallId, output: ev.output });
+        }
+      }
+      const result = await run.wait();
+      assert.equal(result.status, "finished");
+      assert.equal(results.length, 2);
+      assert.equal(results[0]?.id, "t1");
+      assert.equal(results[1]?.id, "t2");
+      assert.match(results[0]?.output ?? "", /AAA/);
+      assert.match(results[1]?.output ?? "", /BBB/);
+      await harness[Symbol.asyncDispose]();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(sess, { recursive: true, force: true });
+    }
+  });
+
   it("reports supports() matrix", async () => {
     const dir = mkdtempSync(join(tmpdir(), "mxpf-h2-"));
     const sess = mkdtempSync(join(tmpdir(), "mxpf-hs2-"));

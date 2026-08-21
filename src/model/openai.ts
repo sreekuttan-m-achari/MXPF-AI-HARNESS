@@ -92,6 +92,7 @@ export type OpenAiClientOptions = {
   apiKey: string;
   baseURL?: string;
   fetchFn?: typeof fetch;
+  maxOutputTokens?: number;
 };
 
 export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
@@ -113,10 +114,13 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
         systemFinal = `${system ?? ""}\n\nRespond with JSON matching this schema:\n${JSON.stringify(req.structuredOutput)}`.trim();
       }
 
+      const maxTokens = req.maxOutputTokens ?? opts.maxOutputTokens;
+
       const body: Record<string, unknown> = {
         model: opts.modelId,
         messages: toOpenAiMessages(req.messages, systemFinal),
         ...(req.tools.length ? { tools: openaiTools(req.tools) } : {}),
+        ...(maxTokens != null ? { max_tokens: maxTokens } : {}),
       };
 
       if (req.structuredOutput && req.tools.length === 0) {
@@ -128,6 +132,13 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${opts.apiKey}`,
+          // OpenRouter ranking / optional attribution
+          ...(base.includes("openrouter.ai")
+            ? {
+                "HTTP-Referer": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS",
+                "X-Title": "mxpf-ai-harness",
+              }
+            : {}),
         },
         body: JSON.stringify(body),
         signal: req.signal,
@@ -138,7 +149,22 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
       }
       if (!res.ok) {
         const text = await res.text();
-        throw new ModelError(`OpenAI error HTTP ${res.status}: ${text}`);
+        let detail = text.slice(0, 800);
+        try {
+          const j = JSON.parse(text) as {
+            error?: { message?: string; code?: string };
+            message?: string;
+          };
+          detail =
+            j.error?.message ||
+            j.message ||
+            detail;
+        } catch {
+          // keep raw text
+        }
+        throw new ModelError(
+          `OpenAI/OpenRouter error HTTP ${res.status}: ${detail}`,
+        );
       }
 
       const json = (await res.json()) as {

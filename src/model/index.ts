@@ -25,6 +25,7 @@ export function createModelClient(
       apiKey,
       baseURL: opts.model.baseURL,
       fetchFn: opts.fetchFn,
+      maxOutputTokens: opts.model.maxOutputTokens,
     });
   }
 
@@ -33,6 +34,7 @@ export function createModelClient(
     apiKey,
     baseURL: opts.model.baseURL,
     fetchFn: opts.fetchFn,
+    maxOutputTokens: opts.model.maxOutputTokens,
   });
 }
 

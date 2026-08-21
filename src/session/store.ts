@@ -80,6 +80,6 @@ export class SessionStore {
         // ignore corrupt prior
       }
     }
-    writeFileSync(path, JSON.stringify(data, null, 2), "utf8");
+    writeFileSync(path, JSON.stringify(data), "utf8");
   }
 }
