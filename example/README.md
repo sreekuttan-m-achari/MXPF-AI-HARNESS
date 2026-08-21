@@ -1,12 +1,14 @@
 # mxpf-ai-harness examples
 
-Small demos for the SDK living in this repo (not published to npm).
+Small demos that install the **published** package from npm (`mxpf-ai-harness@^0.1.1`).
 
 ```bash
 cd example
 npm install
 cp .env.sample .env   # or use the prepared .env — fill API keys
 ```
+
+For local unpublished SDK work, temporarily use `"mxpf-ai-harness": "file:.."` instead.
 
 **Env keys**
 
