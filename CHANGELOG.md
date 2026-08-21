@@ -4,12 +4,19 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-21
+
 ### Added
 
 - `example/` demos: basic harness + LangGraph orchestrate/monitor pattern.
 - Public export of `ModelClient` / `ModelCompleteResponse` types for tests and examples.
 - Optional LangSmith wiring in examples (env-ready).
-- GitHub Actions CI + release publish workflow; `docs/publishing.md`.
+- GitHub Actions CI + release publish via npm Trusted Publishing (OIDC); `docs/publishing.md`.
+
+### Fixed
+
+- Publish workflow no longer requires `NPM_TOKEN` when Trusted Publisher is configured.
+- Release version gate: `package.json` must match the GitHub release tag (e.g. `v0.1.1` ↔ `0.1.1`).
 
 ## [0.1.0] — 2026-08-21
 

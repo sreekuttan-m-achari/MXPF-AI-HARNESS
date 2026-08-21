@@ -1,6 +1,6 @@
 {
   "name": "mxpf-ai-harness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MaximProf AI agent harness SDK — agent loop, tools, MCP, permissions, dual model pipes",
   "type": "module",
   "main": "./dist/index.js",
