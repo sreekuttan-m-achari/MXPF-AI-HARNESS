@@ -7,6 +7,12 @@ name: Publish npm
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Pack only (do not publish)"
+        type: boolean
+        default: false
 
 jobs:
   publish:
@@ -15,7 +21,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write # reserved for future npm Trusted Publishing (OIDC)
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +30,19 @@ jobs:
           node-version: "22"
           registry-url: https://registry.npmjs.org
           cache: npm
+
+      - name: Check NPM_TOKEN secret
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is missing or empty."
+            echo "Create an npm Automation token as sreekuttan.m.achari, then add repo secret NPM_TOKEN:"
+            echo "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/settings/secrets/actions"
+            echo "Docs: docs/publishing.md"
+            exit 1
+          fi
+          echo "NPM_TOKEN is set (length=${#NODE_AUTH_TOKEN})"
 
       - name: Install
         run: npm ci
@@ -35,18 +54,23 @@ jobs:
         run: npm run build
 
       - name: Verify package version matches release tag
+        if: github.event_name == 'release'
         run: |
           TAG="${GITHUB_REF_NAME}"
-          # refs/tags/v0.1.0 → v0.1.0; release may use tag name
           VERSION="${TAG#v}"
           PKG="$(node -p "require('./package.json').version")"
           echo "tag=$TAG package.json=$PKG"
           if [ "$PKG" != "$VERSION" ]; then
-            echo "::error::package.json version ($PKG) must match release tag version ($VERSION). Bump package.json before tagging."
+            echo "::error::package.json version ($PKG) must match release tag version ($VERSION)."
             exit 1
           fi
 
       - name: Publish
+        if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == false) }}
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Dry-run pack
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: npm pack

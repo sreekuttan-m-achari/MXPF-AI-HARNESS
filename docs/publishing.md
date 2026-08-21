@@ -19,8 +19,19 @@ You can publish **manually** or via **GitHub Actions** when you create a GitHub 
 
 1. Open https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/settings/secrets/actions
 2. **New repository secret**
-   - Name: `NPM_TOKEN`
+   - Name: `NPM_TOKEN` (exact name — the workflow reads `secrets.NPM_TOKEN`)
    - Value: the Automation token
+
+**If publish failed with `ENEEDAUTH`:** the secret was missing. Add `NPM_TOKEN`, then re-run the failed job:
+
+```bash
+gh run rerun 32459595047 --failed
+# or: Actions → failed run → Re-run failed jobs
+```
+
+Do **not** create a new `0.1.0` tag if the version never landed on npm; re-running the same release workflow is enough once the secret exists.
+
+Verify secret name in the UI matches `NPM_TOKEN` (not `NPM_TOKEN ` / `NODE_AUTH_TOKEN`).
 
 ### 3. Ship a version
 
