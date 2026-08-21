@@ -24,6 +24,8 @@ export type {
   PermissionPolicy,
   PermissionMode,
   ToolPolicy,
+  ContextOptions,
+  ThroughputOptions,
   McpServerConfig,
   McpStdioServerConfig,
   McpHttpServerConfig,
@@ -31,6 +33,17 @@ export type {
   RunStatus,
   TokenUsage,
 } from "./types.js";
+export {
+  truncateToolResult,
+} from "./context/truncate.js";
+export {
+  compactMessages,
+  estimateChars,
+} from "./context/compact.js";
+export {
+  resolveContextOptions,
+  resolveThroughputOptions,
+} from "./context/resolve.js";
 export {
   HarnessError,
   AuthError,

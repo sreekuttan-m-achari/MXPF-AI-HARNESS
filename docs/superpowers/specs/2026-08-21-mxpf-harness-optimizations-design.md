@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-21  
 **Branch:** `feat/optimizations`  
-**Status:** Draft for review  
+**Status:** Approved — implementing on `feat/optimizations`
 
 ## Problem
 

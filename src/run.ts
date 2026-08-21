@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import type { HarnessEvent } from "./events.js";
 import { runAgentLoop } from "./loop.js";
+import type {
+  ResolvedContext,
+  ResolvedThroughput,
+} from "./context/resolve.js";
 import type { ModelClient } from "./model/types.js";
 import { PermissionGate } from "./permissions/gate.js";
 import type { SessionStore } from "./session/store.js";
@@ -23,6 +27,9 @@ type RunDeps = {
   maxTurns: number;
   prompt: string;
   sendOpts?: SendOptions;
+  context: ResolvedContext;
+  throughput: ResolvedThroughput;
+  maxOutputTokens?: number;
 };
 
 export class RunImpl {
@@ -95,6 +102,9 @@ export class RunImpl {
         structuredOutput: deps.sendOpts?.structuredOutput,
         signal: this.controller.signal,
         emit: (e) => this.emit(e),
+        context: deps.context,
+        throughput: deps.throughput,
+        maxOutputTokens: deps.maxOutputTokens,
       });
 
       this.status = "finished";

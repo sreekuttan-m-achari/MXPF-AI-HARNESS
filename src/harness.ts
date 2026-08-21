@@ -1,6 +1,10 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import {
+  resolveContextOptions,
+  resolveThroughputOptions,
+} from "./context/resolve.js";
 import { McpHost } from "./mcp/host.js";
 import { createModelClient } from "./model/index.js";
 import type { ModelClient } from "./model/types.js";
@@ -96,6 +100,7 @@ export class Harness {
       cwd: opts.cwd,
       builtinNames: opts.tools?.builtins ?? [...DEFAULT_BUILTIN_NAMES],
       mcp,
+      context: resolveContextOptions(opts.context),
     });
 
     return new Harness({ opts, session, model, permissions, router, mcp });
@@ -118,6 +123,9 @@ export class Harness {
       maxTurns: this.opts.maxTurns ?? 40,
       prompt,
       sendOpts,
+      context: resolveContextOptions(this.opts.context),
+      throughput: resolveThroughputOptions(this.opts.throughput),
+      maxOutputTokens: this.opts.model.maxOutputTokens,
     });
     this.activeRun = run;
     return run;

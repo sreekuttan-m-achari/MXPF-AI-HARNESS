@@ -100,6 +100,39 @@ permissions: {
 
 Default mode is `bypass` (desk agents). Denied tools return an error tool result into the loop (no TTY prompts).
 
+## Context & throughput (v0.2)
+
+Reduce tokens and wall time without changing the public run surface:
+
+```ts
+await Harness.create({
+  cwd,
+  model: {
+    provider: "anthropic",
+    id: "claude-sonnet-4-5",
+    apiKey,
+    maxOutputTokens: 4096, // optional
+  },
+  context: {
+    autoCompact: true, // or maxInputChars: 200_000
+    toolResultMaxChars: 32_000, // default
+    keepRecentTurns: 6,
+    // persistCompaction: true, // rewrite session (off by default — lossless)
+  },
+  throughput: {
+    parallelTools: true, // default
+    promptCache: true, // Anthropic cache_control on system + last tool
+  },
+});
+```
+
+| Knob | Default | Effect |
+|------|---------|--------|
+| `context.toolResultMaxChars` | 32k | Cap each tool_result in history |
+| `context.autoCompact` / `maxInputChars` | off / 200k when auto | Extractive summary of older rounds for the model view |
+| `throughput.parallelTools` | on | Concurrent tool_uses in one assistant step |
+| `throughput.promptCache` | on | Provider cache hints when supported |
+
 ## Model pipes
 
 | Provider | API | Typical pipes |
@@ -164,8 +197,11 @@ npm run build
 ## Design docs
 
 - [Design spec](docs/superpowers/specs/2026-08-21-mxpf-ai-harness-design.md)
+- [Optimizations design (v0.2)](docs/superpowers/specs/2026-08-21-mxpf-harness-optimizations-design.md)
 - [Implementation plan](docs/superpowers/plans/2026-08-21-mxpf-ai-harness.md)
+- [Optimizations plan](docs/superpowers/plans/2026-08-21-mxpf-harness-optimizations.md)
 - [v0.1.0 release notes](docs/releases/2026-08-21-v0.1.0.md)
+- [v0.2.0 release notes](docs/releases/2026-08-21-v0.2.0.md)
 
 ## License
 

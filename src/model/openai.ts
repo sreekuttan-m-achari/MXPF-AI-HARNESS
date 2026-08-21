@@ -92,6 +92,7 @@ export type OpenAiClientOptions = {
   apiKey: string;
   baseURL?: string;
   fetchFn?: typeof fetch;
+  maxOutputTokens?: number;
 };
 
 export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
@@ -113,10 +114,13 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
         systemFinal = `${system ?? ""}\n\nRespond with JSON matching this schema:\n${JSON.stringify(req.structuredOutput)}`.trim();
       }
 
+      const maxTokens = req.maxOutputTokens ?? opts.maxOutputTokens;
+
       const body: Record<string, unknown> = {
         model: opts.modelId,
         messages: toOpenAiMessages(req.messages, systemFinal),
         ...(req.tools.length ? { tools: openaiTools(req.tools) } : {}),
+        ...(maxTokens != null ? { max_tokens: maxTokens } : {}),
       };
 
       if (req.structuredOutput && req.tools.length === 0) {

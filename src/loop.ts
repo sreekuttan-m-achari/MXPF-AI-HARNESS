@@ -1,4 +1,13 @@
 import type { HarnessEvent } from "./events.js";
+import {
+  compactMessages,
+  estimateChars,
+} from "./context/compact.js";
+import type {
+  ResolvedContext,
+  ResolvedThroughput,
+} from "./context/resolve.js";
+import { truncateToolResult } from "./context/truncate.js";
 import type { ModelClient } from "./model/types.js";
 import type { InternalMessage, ToolUseContent } from "./model/types.js";
 import { PermissionGate } from "./permissions/gate.js";
@@ -16,6 +25,9 @@ export type LoopOptions = {
   structuredOutput?: Record<string, unknown>;
   signal: AbortSignal;
   emit: (event: HarnessEvent) => void;
+  context: ResolvedContext;
+  throughput: ResolvedThroughput;
+  maxOutputTokens?: number;
 };
 
 export type LoopResult = {
@@ -44,12 +56,34 @@ export async function runAgentLoop(opts: LoopOptions): Promise<LoopResult> {
 
     opts.emit({ type: "status", status: "model", detail: `turn ${turn + 1}` });
 
+    let messages = opts.session.getMessages();
+    if (opts.context.maxInputChars != null) {
+      const before = estimateChars(messages);
+      const compacted = compactMessages(messages, {
+        maxInputChars: opts.context.maxInputChars,
+        keepRecentTurns: opts.context.keepRecentTurns,
+      });
+      if (compacted.compacted) {
+        messages = compacted.messages;
+        opts.emit({
+          type: "status",
+          status: "context",
+          detail: `compacted ${before}→${estimateChars(messages)} chars`,
+        });
+        if (opts.context.persistCompaction) {
+          opts.session.setMessages(messages);
+        }
+      }
+    }
+
     const response = await opts.model.complete({
-      messages: opts.session.getMessages(),
+      messages,
       tools: opts.router.listDefinitions(),
       systemPrompt: opts.systemPrompt,
       structuredOutput: opts.structuredOutput,
       signal: opts.signal,
+      promptCache: opts.throughput.promptCache,
+      maxOutputTokens: opts.maxOutputTokens,
     });
 
     Object.assign(usage, mergeUsage(usage, response.usage));
@@ -88,21 +122,17 @@ export async function runAgentLoop(opts: LoopOptions): Promise<LoopResult> {
       return { text: finalText, structured, usage };
     }
 
-    const toolResults: InternalMessage = {
-      role: "tool",
-      content: [],
-    };
-
     for (const tu of toolUses) {
-      if (opts.signal.aborted) throw new CancelledError();
-
       opts.emit({
         type: "tool.start",
         toolCallId: tu.id,
         name: tu.name,
         input: tu.input,
       });
+    }
 
+    const runOne = async (tu: ToolUseContent) => {
+      if (opts.signal.aborted) throw new CancelledError();
       const decision = opts.permissions.check(tu.name);
       let output: string;
       let isError = false;
@@ -114,20 +144,46 @@ export async function runAgentLoop(opts: LoopOptions): Promise<LoopResult> {
         output = result.output;
         isError = result.isError;
       }
+      const truncated = truncateToolResult(
+        output,
+        opts.context.toolResultMaxChars,
+      );
+      if (truncated.length < output.length) {
+        opts.emit({
+          type: "status",
+          status: "tool",
+          detail: `truncated ${tu.name} ${output.length}→${truncated.length}`,
+        });
+      }
+      return { tu, output: truncated, isError };
+    };
 
+    const settled = opts.throughput.parallelTools
+      ? await Promise.all(toolUses.map((tu) => runOne(tu)))
+      : await (async () => {
+          const out = [];
+          for (const tu of toolUses) out.push(await runOne(tu));
+          return out;
+        })();
+
+    const toolResults: InternalMessage = {
+      role: "tool",
+      content: [],
+    };
+
+    for (const item of settled) {
       opts.emit({
         type: "tool.result",
-        toolCallId: tu.id,
-        name: tu.name,
-        output,
-        isError,
+        toolCallId: item.tu.id,
+        name: item.tu.name,
+        output: item.output,
+        isError: item.isError,
       });
-
       toolResults.content.push({
         type: "tool_result",
-        tool_use_id: tu.id,
-        content: output,
-        is_error: isError,
+        tool_use_id: item.tu.id,
+        content: item.output,
+        is_error: item.isError,
       });
     }
 

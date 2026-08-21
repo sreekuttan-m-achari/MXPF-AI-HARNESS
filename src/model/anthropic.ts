@@ -90,6 +90,8 @@ export type AnthropicClientOptions = {
   apiKey: string;
   baseURL?: string;
   fetchFn?: typeof fetch;
+  maxOutputTokens?: number;
+  promptCache?: boolean;
 };
 
 export function createAnthropicClient(
@@ -102,28 +104,48 @@ export function createAnthropicClient(
     provider: "anthropic",
     modelId: opts.modelId,
     async complete(req: ModelCompleteRequest): Promise<ModelCompleteResponse> {
-      const system =
+      let system =
         req.systemPrompt ??
         (req.messages.find((m) => m.role === "system")?.content as
           | string
           | undefined);
 
+      if (req.structuredOutput) {
+        const hint = `\n\nRespond with JSON matching this schema:\n${JSON.stringify(req.structuredOutput)}`;
+        system = `${system ?? ""}${hint}`.trim();
+      }
+
+      const useCache = req.promptCache !== false && opts.promptCache !== false;
+      const maxTokens =
+        req.maxOutputTokens ?? opts.maxOutputTokens ?? 8192;
+
+      const tools = req.tools.length
+        ? anthropicTools(req.tools).map((t, i, arr) =>
+            useCache && i === arr.length - 1
+              ? { ...t, cache_control: { type: "ephemeral" } }
+              : t,
+          )
+        : undefined;
+
       const body: Record<string, unknown> = {
         model: opts.modelId,
-        max_tokens: 8192,
+        max_tokens: maxTokens,
         messages: toAnthropicMessages(req.messages),
-        ...(system ? { system } : {}),
-        ...(req.tools.length
-          ? { tools: anthropicTools(req.tools) }
+        ...(system
+          ? {
+              system: useCache
+                ? [
+                    {
+                      type: "text",
+                      text: system,
+                      cache_control: { type: "ephemeral" },
+                    },
+                  ]
+                : system,
+            }
           : {}),
+        ...(tools ? { tools } : {}),
       };
-
-      if (req.structuredOutput) {
-        body.tool_choice = undefined;
-        // Prefer JSON via instruction when tools present; many pipes ignore response_format.
-        const hint = `\n\nRespond with JSON matching this schema:\n${JSON.stringify(req.structuredOutput)}`;
-        body.system = `${system ?? ""}${hint}`.trim();
-      }
 
       const res = await fetchFn(`${base}/v1/messages`, {
         method: "POST",
