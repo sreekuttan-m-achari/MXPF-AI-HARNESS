@@ -139,6 +139,20 @@ Live runs: copy `example/.env.sample` → `.env`, set `MXPF_HARNESS_API_KEY`, th
 
 **LangChain / LangGraph:** yes — use LangGraph *around* the harness for multi-step flows and monitoring; keep tool/MCP loops inside `mxpf-ai-harness`. See [`example/langgraph/README.md`](./example/langgraph/README.md).
 
+## Publish
+
+See **[docs/publishing.md](./docs/publishing.md)** for:
+
+- **GitHub Actions** (recommended): release tag → npm publish via `NPM_TOKEN`
+- **Manual** `npm publish --access public`
+- Optional **Trusted Publishing** (OIDC)
+
+```bash
+# After NPM_TOKEN is set on the repo:
+git tag v0.1.0 && git push origin v0.1.0
+gh release create v0.1.0 --title "mxpf-ai-harness 0.1.0" --notes-file docs/releases/2026-08-21-v0.1.0.md
+```
+
 ## Scripts
 
 ```bash

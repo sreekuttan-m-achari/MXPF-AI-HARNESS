@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 - `example/` demos: basic harness + LangGraph orchestrate/monitor pattern.
 - Public export of `ModelClient` / `ModelCompleteResponse` types for tests and examples.
+- Optional LangSmith wiring in examples (env-ready).
+- GitHub Actions CI + release publish workflow; `docs/publishing.md`.
 
 ## [0.1.0] — 2026-08-21
 

@@ -42,6 +42,9 @@
     "url": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/issues"
   },
   "homepage": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.4.3"
