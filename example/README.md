@@ -14,14 +14,21 @@ For local unpublished SDK work, temporarily use `"mxpf-ai-harness": "file:.."` i
 
 | Variable | Required for | Purpose |
 |----------|--------------|---------|
-| `MXPF_HARNESS_API_KEY` | `basic` / `langgraph` | Model provider auth |
-| `MXPF_HARNESS_PROVIDER` | optional | `anthropic` (default) or `openai` |
-| `MXPF_HARNESS_MODEL` | optional | Model id |
-| `MXPF_HARNESS_BASE_URL` | optional | OpenRouter / LiteLLM / local pipe |
+| `MXPF_HARNESS_API_KEY` | `basic` / `langgraph` | OpenRouter or provider API key |
+| `MXPF_HARNESS_PROVIDER` | optional | `openai` for OpenRouter (default in sample); or `anthropic` |
+| `MXPF_HARNESS_MODEL` | optional | Default sample: [`openrouter/free`](https://openrouter.ai/openrouter/free) |
+| `MXPF_HARNESS_BASE_URL` | OpenRouter | Must be `https://openrouter.ai/api/v1` (include `/v1`) |
 | `LANGSMITH_API_KEY` | optional | [LangSmith](https://smith.langchain.com/o/b7827736-fb11-449f-aca5-8aa59d6a7035) traces |
 | `LANGSMITH_PROJECT` | optional | Default `mxpf-ai-harness-examples` |
 
-LangSmith stays off until you paste an API key; then live LangGraph runs log `[langsmith] tracing on`.
+**OpenRouter free setup**
+
+1. Create a key at https://openrouter.ai/keys  
+2. Put it in `MXPF_HARNESS_API_KEY` in `.env`  
+3. Keep `PROVIDER=openai`, `MODEL=openrouter/free`, `BASE_URL=https://openrouter.ai/api/v1`  
+4. `npm run basic` or `npm run langgraph`
+
+`openrouter/free` routes among free models and prefers ones that support tools when the harness sends tool schemas.
 
 ## Examples
 
