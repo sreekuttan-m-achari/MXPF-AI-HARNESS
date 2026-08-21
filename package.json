@@ -1,0 +1,54 @@
+{
+  "name": "mxpf-ai-harness",
+  "version": "0.1.0",
+  "description": "MaximProf AI agent harness SDK — agent loop, tools, MCP, permissions, dual model pipes",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test tests/**/*.test.ts",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "harness",
+    "mcp",
+    "mxpf",
+    "maximprof"
+  ],
+  "author": "sreekuttan.m.achari",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS/issues"
+  },
+  "homepage": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.0"
+  }
+}
