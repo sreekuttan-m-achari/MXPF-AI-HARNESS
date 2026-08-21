@@ -128,6 +128,13 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${opts.apiKey}`,
+          // OpenRouter ranking / optional attribution
+          ...(base.includes("openrouter.ai")
+            ? {
+                "HTTP-Referer": "https://github.com/sreekuttan-m-achari/MXPF-AI-HARNESS",
+                "X-Title": "mxpf-ai-harness",
+              }
+            : {}),
         },
         body: JSON.stringify(body),
         signal: req.signal,
@@ -138,7 +145,22 @@ export function createOpenAiClient(opts: OpenAiClientOptions): ModelClient {
       }
       if (!res.ok) {
         const text = await res.text();
-        throw new ModelError(`OpenAI error HTTP ${res.status}: ${text}`);
+        let detail = text.slice(0, 800);
+        try {
+          const j = JSON.parse(text) as {
+            error?: { message?: string; code?: string };
+            message?: string;
+          };
+          detail =
+            j.error?.message ||
+            j.message ||
+            detail;
+        } catch {
+          // keep raw text
+        }
+        throw new ModelError(
+          `OpenAI/OpenRouter error HTTP ${res.status}: ${detail}`,
+        );
       }
 
       const json = (await res.json()) as {
